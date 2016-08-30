@@ -1,0 +1,3 @@
+gspread
+launchpadlib
+oauth2client

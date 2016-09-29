@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 from launchpad import launchpad_login
 from oauth2client.service_account import ServiceAccountCredentials
 import settings
 import gspread
+import argparse
 
 
 class CategorizationTable:
@@ -25,12 +27,13 @@ class CategorizationTable:
         self.worksheet =\
             gspread_client.open_by_key(milestone['spreadsheet']).sheet1
 
-        self.names = milestone['names']
+        self.name = milestone['name']
+        self.targets = milestone['targets']
         self.header_row = milestone['header_row']
         self.columns_names = milestone['columns_names']
 
         self.table_assoc_columns = self._generate_assoc_table()
-        print 'Assoc table generated for {0}'.format(self.names)
+        print 'Assoc table generated for {0}'.format(self.name)
         print self.table_assoc_columns
 
     def _raw_row_cells(self, irow, count):
@@ -71,7 +74,8 @@ class CategorizationTable:
                 if cell.value != bug[name]:
                     cell.value = bug[name]
                     cells_to_update.append(cells[icol])
-        self.worksheet.update_cells(cells_to_update)
+        if len(cells_to_update) > 0:
+            self.worksheet.update_cells(cells_to_update)
 
 
 class CategorizationUpdater:
@@ -107,7 +111,7 @@ class CategorizationUpdater:
             for key in ['title', 'information_type', 'web_link', 'private']:
                 self.row_set(row, key, getattr(bug, key))
 
-            task = self.bug_get_task_for_mu(bug.bug_tasks.entries, milestone_dict['names'])
+            task = self.bug_get_task_for_mu(bug.bug_tasks.entries, milestone_dict['targets'])
             if task is not None:
                 self.row_set(row, 'assignee', self.user_link_to_name(task['assignee_link']))
 
@@ -131,16 +135,40 @@ class CategorizationUpdater:
             print 'warn: missed "{0}" field'.format(key)
 
     @staticmethod
-    def bug_get_task_for_mu(tasks, mus):
+    def bug_get_task_for_mu(tasks, targets):
         for task in tasks:
-            for mu in mus:
+            for target in targets:
                 link = task['milestone_link']
-                if link is not None and link.endswith(mu):
+                if link is not None and link.endswith(target):
                     return task
         return None
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--milestone', help='categorization table milestone to update')
+    parser.add_argument('-l', '--list', help='list available milestones', action='store_true')
+    args = parser.parse_args()
+
+    if args.list:
+        for milestone in settings.MILESTONES:
+            print milestone['name']
+        return
+
+    mu = None
+    if args.milestone is None:
+        mu = settings.MILESTONES[0]
+    else:
+        for milestone in settings.MILESTONES:
+            if args.milestone == milestone['name']:
+                mu = milestone
+                break
+        if mu is None:
+            print 'Cannot find milestone {0}'.format(args.milestone)
+            return
+
+    print 'Updating {0} categorization table'.format(mu['name'])
+
     lp = launchpad_login('production', 'mirantis qa table updater',
                          settings.LAUNCHPAD_SERVICE_ACCOUNT_CREDS_FILE)
 
@@ -152,7 +180,8 @@ def main():
     )
 
     updater = CategorizationUpdater(lp, gs)
-    updater.update_table(settings.MILESTONES[0])
+    updater.update_table(mu)
 
 if __name__ == '__main__':
     main()
+

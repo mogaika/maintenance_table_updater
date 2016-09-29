@@ -13,12 +13,14 @@ TABLE_COLUMNS_NAMES_DEFAULT = {
 MILESTONES = (
     # first milestone is default
     {
-        'names': ('6.1-mu-7', '6.1-updates'),
+        'name': '6.1-mu-7-test',
+        'targets': ('6.1-mu-7', '6.1-updates'),
         'spreadsheet': '1h14uuug33MS6nDirQFt36Ri4yVu9PTWiCaUlsDeI7YI',
         'header_row': 4,  # columns names row index
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }, {
-        'names': ('7.0-mu-6', '7.0-updates'),
+        'name': '7.0-mu-6',
+        'targets': ('7.0-mu-6', '7.0-updates'),
         'spreadsheet': '1QefXrUy80WAoTY4OHwUlqqJEvj_D96WF7lZxFpaCefI',
         'header_row': 4,
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,

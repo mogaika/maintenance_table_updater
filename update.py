@@ -33,44 +33,45 @@ class CategorizationTable:
         print 'Assoc table generated for {0}'.format(self.names)
         print self.table_assoc_columns
 
-    def _get_raw_row(self, irow, icol_end):
-        """start_cell = self.worksheet.get_addr_int(irow, 1)
-        end_cell = self.worksheet.get_addr_int(irow, icol_end)
-        row_cells = self.worksheet.range('%s:%s' % (start_cell, end_cell))
-        return [cell.value for cell in row_cells]
-        """
-        for row in range(min_row, max_row + 1):
-            yield tuple(self.cell(row=row, column=column)
-                        for column in range(min_col, max_col + 1))
-        from pprint import pprint
-        pprint(dir(self.worksheet))
+    def _raw_row_cells(self, irow, count):
+        start_cell = self.worksheet.get_addr_int(irow, 1)
+        end_cell = self.worksheet.get_addr_int(irow, count + 1)
+        return self.worksheet.range('%s:%s' % (start_cell, end_cell))
 
     @staticmethod
     def _bug_id_is_valid(bug_id):
         return bug_id.isdigit()
 
-    def bug_deserialize(self, row):
-        bug = dict()
-        for name, icol in self.table_assoc_columns.iteritems():
-            bug[name] = row[icol]
-        return bug
-
     def get_bugs_rows(self):
         irow = self.header_row
-        max_cols = max([i for i in self.table_assoc_columns.itervalues()]) + 1
+        need_cols = max([i for i in self.table_assoc_columns.itervalues()])
 
         empty_rows_in_seq = 0
         while empty_rows_in_seq < settings.MAX_INVALID_ROWS_IN_SEQ:
             irow += 1
-            bug_row = self._get_raw_row(irow, max_cols)
-            bug = self.bug_deserialize(bug_row)
+
+            bug_cells = self._raw_row_cells(irow, need_cols)
+
+            bug = {'_raw_': bug_cells}
+            for name, icol in self.table_assoc_columns.iteritems():
+                bug[name] = bug_cells[icol].value
+
             if self._bug_id_is_valid(bug['id']):
-                yield irow, bug
+                yield bug
                 empty_rows_in_seq = 0
             else:
                 empty_rows_in_seq += 1
 
-    #def update_bug(self, bug):
+    def update_bug(self, bug):
+        cells = bug['_raw_']
+        cells_to_update = []
+        for name, icol in self.table_assoc_columns.iteritems():
+            if name in bug:
+                cell = cells[icol]
+                if cell.value != bug[name]:
+                    cell.value = bug[name]
+                    cells_to_update.append(cells[icol])
+        self.worksheet.update_cells(cells_to_update)
 
 
 class CategorizationUpdater:
@@ -78,9 +79,9 @@ class CategorizationUpdater:
         self._lp = launchpad_client
         self._gc = gspread_client
 
-    def bug_get_info(self, bugid):
+    def bug_get_info(self, bug_id):
         try:
-            ret = self._lp.bugs[bugid]
+            ret = self._lp.bugs[bug_id]
         except KeyError:
             ret = None
         return ret
@@ -95,9 +96,8 @@ class CategorizationUpdater:
     def update_table(self, milestone_dict):
         table = CategorizationTable(self._gc, milestone_dict)
 
-        for irow, row in table.get_bugs_rows():
+        for row in table.get_bugs_rows():
             bug = self.bug_get_info(row['id'])
-            print row
             if bug is None:
                 print '[{0}] Cannot fetch. Probably private.'.format(row['id'])
                 continue
@@ -115,6 +115,7 @@ class CategorizationUpdater:
                     self.row_set(row, key, task[key])
             else:
                 print '[{0}] Cannot detect mu of bug'.format(row['id'])
+            table.update_bug(row)
 
     @staticmethod
     def row_set(row, key, value):
@@ -135,7 +136,6 @@ class CategorizationUpdater:
             for mu in mus:
                 link = task['milestone_link']
                 if link is not None and link.endswith(mu):
-                    print 'mu detected from link {0}'.format(task['milestone_link'])
                     return task
         return None
 

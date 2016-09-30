@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-from launchpad import launchpad_login
-from oauth2client.service_account import ServiceAccountCredentials
+from auth import launchpad_login
+from auth import gspread_login
+from gspread.exceptions import SpreadsheetNotFound
+
 import settings
-import gspread
 import argparse
 
 
@@ -31,7 +32,12 @@ class CategorizationTable:
         self.columns_names = milestone['columns_names']
         self.update_queue = []
 
-        self.worksheet = gspread_client.open_by_key(self.spreadsheet_name).sheet1
+        try:
+            self.worksheet = gspread_client.open_by_key(self.spreadsheet_name).sheet1
+        except SpreadsheetNotFound, ex:
+            print '> Cannot open worksheet "{0}"'.format(self.spreadsheet_name)
+            print '> Probably you need share worksheet with key owner'
+            raise ex
 
         self.table_assoc_columns = self._generate_assoc_table()
         print 'Assoc table generated for {0}'.format(self.name)
@@ -177,12 +183,10 @@ def main():
     lp = launchpad_login('production', 'mirantis qa table updater',
                          settings.LAUNCHPAD_SERVICE_ACCOUNT_CREDS_FILE)
 
-    gs = gspread.authorize(
-        ServiceAccountCredentials.from_json_keyfile_name(
-            settings.GOOGLE_SERVICE_ACCOUNT_CREDS_JSON_FILE,
-            ['https://spreadsheets.google.com/feeds']
-        )
-    )
+    gs = gspread_login(settings.GOOGLE_SERVICE_ACCOUNT_CREDS_JSON_FILE)
+
+    if lp is None or gs is None:
+        return
 
     updater = CategorizationUpdater(lp, gs)
     updater.update_table(mu)

@@ -2,7 +2,9 @@ from lazr.restfulclient.errors import HTTPError
 from launchpadlib.credentials import RequestTokenAuthorizationEngine
 from launchpadlib.credentials import EndUserDeclinedAuthorization
 from launchpadlib.launchpad import Launchpad
+from oauth2client.service_account import ServiceAccountCredentials
 
+import gspread
 import time
 
 
@@ -12,8 +14,6 @@ class AuthorizeRequestTokenCli(RequestTokenAuthorizationEngine):
               service_root, consumer_name=consumer_name)
 
     def make_end_user_authorize_token(self, credentials, request_token):
-        print credentials.consumer
-        print credentials.access_token
         auth_url = credentials.get_request_token(web_root=self.web_root)
         print 'Launchpad need auth using url:'
         print auth_url
@@ -38,7 +38,7 @@ class AuthorizeRequestTokenCli(RequestTokenAuthorizationEngine):
 
 
 def credentials_save_fail():
-    print 'warn: fail when saving credentials'
+    print '> warn: fail when saving credentials'
 
 
 def launchpad_login(service_root, consumer_name, credentials_file=None):
@@ -51,3 +51,16 @@ def launchpad_login(service_root, consumer_name, credentials_file=None):
         credential_save_failed=credentials_save_fail)
 
     return lp
+
+
+def gspread_login(filename):
+    try:
+        return gspread.authorize(
+            ServiceAccountCredentials.from_json_keyfile_name(
+                filename, ['https://spreadsheets.google.com/feeds']))
+    except:
+        print '> Problem when open google api key "{0}"'.format(filename)
+        print '> For getting a new key follow steps described in:'
+        print '> http://gspread.readthedocs.io/en/latest/oauth2.html'
+        print '> Do not forget share documents with key owner service account!'
+    return None

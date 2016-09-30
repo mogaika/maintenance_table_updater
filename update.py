@@ -24,13 +24,14 @@ class CategorizationTable:
         return table_assoc_columns
 
     def __init__(self, gspread_client, milestone):
-        self.worksheet =\
-            gspread_client.open_by_key(milestone['spreadsheet']).sheet1
-
+        self.spreadsheet_name = milestone['spreadsheet']
         self.name = milestone['name']
         self.targets = milestone['targets']
         self.header_row = milestone['header_row']
         self.columns_names = milestone['columns_names']
+        self.update_queue = []
+
+        self.worksheet = gspread_client.open_by_key(self.spreadsheet_name).sheet1
 
         self.table_assoc_columns = self._generate_assoc_table()
         print 'Assoc table generated for {0}'.format(self.name)
@@ -65,17 +66,19 @@ class CategorizationTable:
             else:
                 empty_rows_in_seq += 1
 
-    def update_bug(self, bug):
+    def queue_bug_update(self, bug):
         cells = bug['_raw_']
-        cells_to_update = []
         for name, icol in self.table_assoc_columns.iteritems():
             if name in bug:
                 cell = cells[icol]
                 if cell.value != bug[name]:
                     cell.value = bug[name]
-                    cells_to_update.append(cells[icol])
-        if len(cells_to_update) > 0:
-            self.worksheet.update_cells(cells_to_update)
+                    self.update_queue.append(cells[icol])
+
+    def flush_updates(self):
+        print 'Flushing {0} changes to spreadsheet "{1}"'.format(len(self.update_queue), self.spreadsheet_name)
+        if len(self.update_queue) > 0:
+            self.worksheet.update_cells(self.update_queue)
 
 
 class CategorizationUpdater:
@@ -119,7 +122,9 @@ class CategorizationUpdater:
                     self.row_set(row, key, task[key])
             else:
                 print '[{0}] Cannot detect mu of bug'.format(row['id'])
-            table.update_bug(row)
+            table.queue_bug_update(row)
+
+        table.flush_updates()
 
     @staticmethod
     def row_set(row, key, value):

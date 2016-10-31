@@ -29,7 +29,7 @@ MILESTONES = (
 
 # how many invalid rows can by in row.
 # used to detect end of table
-MAX_INVALID_ROWS_IN_SEQ = 3
+MAX_INVALID_ROWS_IN_SEQ = 5
 
 # auth token caching
 GOOGLE_SERVICE_ACCOUNT_CREDS_JSON_FILE = 'creds-google.json'

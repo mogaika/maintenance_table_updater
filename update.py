@@ -74,12 +74,15 @@ class CategorizationTable:
 
     def queue_bug_update(self, bug):
         cells = bug['_raw_']
+        changes = 0
         for name, icol in self.table_assoc_columns.iteritems():
             if name in bug:
                 cell = cells[icol]
                 if cell.value != bug[name]:
                     cell.value = bug[name]
                     self.update_queue.append(cells[icol])
+                    changes += 1
+        return changes
 
     def flush_updates(self):
         print 'Flushing {0} changes to spreadsheet "{1}"'.format(len(self.update_queue), self.spreadsheet_name)
@@ -115,22 +118,34 @@ class CategorizationUpdater:
                 print '[{0}] Cannot fetch. Probably private.'.format(row['id'])
                 continue
 
-            print '[{0}] Fetched.'.format(row['id'])
-
             for key in ['title', 'information_type', 'web_link', 'private']:
                 self.row_set(row, key, getattr(bug, key))
 
-            task = self.bug_get_task_for_mu(bug.bug_tasks.entries, milestone_dict['targets'])
+            task, mu_id = self.bug_get_task_for_mu(bug.bug_tasks.entries, milestone_dict['targets'])
             if task is not None:
+                if mu_id != 0:
+                    self.row_add_note(row, 'targeted on "{0}"'.format(milestone_dict['targets'][mu_id]))
+
                 self.row_set(row, 'assignee', self.user_link_to_name(task['assignee_link']))
 
                 for key in ['importance', 'status']:
                     self.row_set(row, key, task[key])
-            else:
-                print '[{0}] Cannot detect mu of bug'.format(row['id'])
-            table.queue_bug_update(row)
+
+            changes = table.queue_bug_update(row)
+            print '[{0}] Fetched {1} changes. {2}'.format(row['id'], changes, "" if task else "Cannot detect mu")
 
         table.flush_updates()
+
+    @staticmethod
+    def row_add_note(row, note):
+        if 'notes' in row:
+            note += ';'
+            current_note = row['notes']
+            if note not in current_note:
+                current_note = note + current_note
+                row['notes'] = current_note
+        else:
+            print 'warn: missed "notes" field'
 
     @staticmethod
     def row_set(row, key, value):
@@ -148,11 +163,11 @@ class CategorizationUpdater:
     @staticmethod
     def bug_get_task_for_mu(tasks, targets):
         for task in tasks:
-            for target in targets:
+            for i, target in enumerate(targets):
                 link = task['milestone_link']
                 if link is not None and link.endswith(target):
-                    return task
-        return None
+                    return task, i
+        return None, -1
 
 
 def main():

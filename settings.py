@@ -24,6 +24,18 @@ MILESTONES = (
         'spreadsheet': '1QefXrUy80WAoTY4OHwUlqqJEvj_D96WF7lZxFpaCefI',
         'header_row': 4,
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '7.0-mu-7',
+        'targets': ('7.0-mu-7', '7.0-updates'),
+        'spreadsheet': '1SHKoqsADcbee5B-7fZZXaInjcXjcVtmmtG97KSoRjno',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '8.0-mu-4',
+        'targets': ('8.0-mu-4', '8.0-updates'),
+        'spreadsheet': '1YoC2XnzerbT73F9gKD5O9Zi19qRD32u23L93R-jWlCo',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }
 )
 

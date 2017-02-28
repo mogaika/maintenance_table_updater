@@ -10,13 +10,21 @@ TABLE_COLUMNS_NAMES_DEFAULT = {
     'notes': 'Notes',
 }
 
+# used for determine "possibly missed from table" bugs
+PROJECTS = ('mos', 'fuel')
 MILESTONES = (
-    # first milestone is default
     {
+        # used in command line and printing
         'name': '6.1-mu-7-test',
+		# valid milestones for bugs, used to fetch stataus and assigner
+		# first item for "real" milestone,
+		# because used to detect "possiby missed from table" bugs
         'targets': ('6.1-mu-7', '6.1-updates'),
+		# spreadsheet id, can be taken from url
         'spreadsheet': '1h14uuug33MS6nDirQFt36Ri4yVu9PTWiCaUlsDeI7YI',
-        'header_row': 4,  # columns names row index
+		# row index, where table header is stored
+        'header_row': 4,
+		# header column name => bug field names mapping
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }, {
         'name': '7.0-mu-6',
@@ -43,6 +51,6 @@ MILESTONES = (
 # used to detect end of table
 MAX_INVALID_ROWS_IN_SEQ = 5
 
-# auth token caching
+# auth token cachingf fiels
 GOOGLE_SERVICE_ACCOUNT_CREDS_JSON_FILE = 'creds-google.json'
 LAUNCHPAD_SERVICE_ACCOUNT_CREDS_FILE = 'creds-launchpad.ini'

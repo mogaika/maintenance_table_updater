@@ -74,14 +74,14 @@ class CategorizationTable:
 
     def queue_bug_update(self, bug):
         cells = bug['_raw_']
-        changes = 0
+        changes = {}
         for name, icol in self.table_assoc_columns.iteritems():
             if name in bug:
                 cell = cells[icol]
                 if cell.value != bug[name]:
+                    changes[name] = (cell.value, bug[name])
                     cell.value = bug[name]
                     self.update_queue.append(cells[icol])
-                    changes += 1
         return changes
 
     def flush_updates(self):
@@ -102,12 +102,9 @@ class CategorizationUpdater:
             ret = None
         return ret
 
-    def user_link_to_name(self, lp_user_link):
-        login = lp_user_link.split('/')[-1][1:]
-        for user in self._lp.people.find(text=login).entries:
-            if user['self_link'] == lp_user_link:
-                return '{0} ({1})'.format(user['display_name'], login)
-        return login
+    @staticmethod
+    def _assignee_to_string(assignee):
+        return '{0} ({1})'.format(assignee.display_name, assignee.name)
 
     def update_table(self, milestone_dict):
         table = CategorizationTable(self._gc, milestone_dict)
@@ -121,19 +118,20 @@ class CategorizationUpdater:
             for key in ['title', 'information_type', 'web_link', 'private']:
                 self.row_set(row, key, getattr(bug, key))
 
-            task, mu_id = self.bug_get_task_for_mu(bug.bug_tasks.entries, milestone_dict['targets'])
+            task, mu_id = self.bug_get_task_for_mu(bug.bug_tasks, milestone_dict['targets'])
             if task is not None:
                 if mu_id != 0:
                     self.row_add_note(row, 'targeted on "{0}"'.format(milestone_dict['targets'][mu_id]))
 
-                self.row_set(row, 'assignee', self.user_link_to_name(task['assignee_link']))
+                self.row_set(row, 'assignee', self._assignee_to_string(task.assignee))
 
                 for key in ['importance', 'status']:
-                    self.row_set(row, key, task[key])
+                    self.row_set(row, key, getattr(task, key))
+            else:
+                self.row_add_note(row, 'missed target')
 
             changes = table.queue_bug_update(row)
-            print '[{0}] Fetched {1} changes. {2}'.format(row['id'], changes, "" if task else "Cannot detect mu")
-
+            print '[{0}] Changes: {1}'.format(row['id'], changes if task else "Cannot detect mu")
         table.flush_updates()
 
     @staticmethod
@@ -164,8 +162,7 @@ class CategorizationUpdater:
     def bug_get_task_for_mu(tasks, targets):
         for task in tasks:
             for i, target in enumerate(targets):
-                link = task['milestone_link']
-                if link is not None and link.endswith(target):
+                if task.milestone.name == target:
                     return task, i
         return None, -1
 
@@ -183,7 +180,8 @@ def main():
 
     mu = None
     if args.milestone is None:
-        mu = settings.MILESTONES[0]
+		print 'Choose milestone to update from list. Use --help!'
+		return
     else:
         for milestone in settings.MILESTONES:
             if args.milestone == milestone['name']:

@@ -162,8 +162,10 @@ class CategorizationUpdater:
     def bug_get_task_for_mu(tasks, targets):
         for task in tasks:
             for i, target in enumerate(targets):
-                if task.milestone.name == target:
-                    return task, i
+                ms = task.milestone
+                if ms is not None:
+                    if task.milestone.name == target:
+                        return task, i
         return None, -1
 
 

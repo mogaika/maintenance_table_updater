@@ -50,6 +50,12 @@ MILESTONES = (
         'spreadsheet': '1lKtS5bF5ulIWAJuPYE7qJh1KJ8-7SUy_qV17XGoHOD4',
         'header_row': 4,
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '7.0-mu-8',
+        'targets': ('7.0-mu-8', '7.0-updates'),
+        'spreadsheet': '15m-5JooatYuuSs2nTDsbO9D8sfmKJWsJ6je1_fIrXxs',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }
 )
 

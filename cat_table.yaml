@@ -1,0 +1,31 @@
+- project:
+    name: Update bugs tables
+    jobs:
+        - 'update-cat-table-{milestone}':
+            milestone: 9.2-mu-1
+        - 'update-cat-table-{milestone}':
+            milestone: 8.0-mu-4
+        - 'update-cat-table-{milestone}':
+            milestone: 7.0-mu-8
+
+- job-template:
+    name: 'update-cat-table-{milestone}'
+    concurrently: false
+    display-name: 'Update categorization table for {milestone}'
+    quiet-period: 10
+    builders:
+        - shell: |
+            cd /work/my/cat_table_update
+            ./update.py -m "{milestone}"
+
+- job:
+    name: 'update-cat-tables'
+    concurrently: false
+    display-name: 'Update categorization tables for active milestones'
+    triggers:
+        - timed: 'H/20 7-22 * * *' # efery 20 min 7am-10pm
+    builders:
+        - trigger-builds:
+            - project:
+                - "update-cat-table-7.0-mu-8"
+

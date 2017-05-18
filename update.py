@@ -122,8 +122,8 @@ class CategorizationUpdater:
             if task is not None:
                 if mu_id != 0:
                     self.row_add_note(row, 'targeted on "{0}"'.format(milestone_dict['targets'][mu_id]))
-
-                self.row_set(row, 'assignee', self._assignee_to_string(task.assignee))
+                if task.assignee is not None:
+                    self.row_set(row, 'assignee', self._assignee_to_string(task.assignee))
 
                 for key in ['importance', 'status']:
                     self.row_set(row, key, getattr(task, key))

@@ -16,15 +16,15 @@ MILESTONES = (
     {
         # used in command line and printing
         'name': '6.1-mu-7-test',
-		# valid milestones for bugs, used to fetch stataus and assigner
-		# first item for "real" milestone,
-		# because used to detect "possiby missed from table" bugs
+	# valid milestones for bugs, used to fetch stataus and assigner
+	# first item for "real" milestone,
+	# because used to detect "possiby missed from table" bugs
         'targets': ('6.1-mu-7', '6.1-updates'),
-		# spreadsheet id, can be taken from url
+	# spreadsheet id, can be taken from url
         'spreadsheet': '1h14uuug33MS6nDirQFt36Ri4yVu9PTWiCaUlsDeI7YI',
-		# row index, where table header is stored
+	# row index, where table header is stored
         'header_row': 4,
-		# header column name => bug field names mapping
+	# header column name => bug field names mapping
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }, {
         'name': '7.0-mu-6',

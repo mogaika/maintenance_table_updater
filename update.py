@@ -2,6 +2,7 @@
 from auth import launchpad_login
 from auth import gspread_login
 from gspread.exceptions import SpreadsheetNotFound
+from time import gmtime, strftime
 
 import settings
 import argparse
@@ -31,6 +32,7 @@ class CategorizationTable:
         self.header_row = milestone['header_row']
         self.columns_names = milestone['columns_names']
         self.update_queue = []
+        self.last_empty_row = None
 
         try:
             self.worksheet = gspread_client.open_by_key(self.spreadsheet_name).sheet1
@@ -70,7 +72,16 @@ class CategorizationTable:
                 yield bug
                 empty_rows_in_seq = 0
             else:
+                if empty_rows_in_seq == 0:
+                    self.last_empty_row = irow
                 empty_rows_in_seq += 1
+
+    def get_new_bug_row(self):
+        need_cols = max([i for i in self.table_assoc_columns.itervalues()])
+        bug_cells = self._raw_row_cells(self.last_empty_row, need_cols)
+        bug = {'_raw_': bug_cells}
+        self.last_empty_row += 1
+        return bug
 
     def queue_bug_update(self, bug):
         cells = bug['_raw_']
@@ -106,67 +117,87 @@ class CategorizationUpdater:
     def _assignee_to_string(assignee):
         return '{0} ({1})'.format(assignee.display_name, assignee.name)
 
-    def update_table(self, milestone_dict):
-        table = CategorizationTable(self._gc, milestone_dict)
-
-        for row in table.get_bugs_rows():
-            bug = self.bug_get_info(row['id'])
-            if bug is None:
-                print '[{0}] Cannot fetch. Probably private.'.format(row['id'])
-                continue
-
+    def bug_update_row(self, bugid, table, row, milestone_dict):
+        self.row_set(row, 'id', bugid)
+        bug = self.bug_get_info(bugid)
+        if bug is None:
+            print '[{0}] Cannot fetch. Probably private.'.format(bugid)
+        else:
             for key in ['title', 'information_type', 'web_link', 'private']:
                 self.row_set(row, key, getattr(bug, key))
-
+    
             task, mu_id = self.bug_get_task_for_mu(bug.bug_tasks, milestone_dict['targets'])
             if task is not None:
                 if mu_id != 0:
                     self.row_add_note(row, 'targeted on "{0}"'.format(milestone_dict['targets'][mu_id]))
                 if task.assignee is not None:
                     self.row_set(row, 'assignee', self._assignee_to_string(task.assignee))
-
+    
                 for key in ['importance', 'status']:
                     self.row_set(row, key, getattr(task, key))
             else:
                 self.row_add_note(row, 'missed target')
+        
+        changes = table.queue_bug_update(row)
+        if bug is not None:
+            print '[{0}] Changes: {1}'.format(bugid, changes if task else "Cannot detect mu")
+        return
 
-            changes = table.queue_bug_update(row)
-            print '[{0}] Changes: {1}'.format(row['id'], changes if task else "Cannot detect mu")
+    def update_table(self, milestone_dict):
+        table = CategorizationTable(self._gc, milestone_dict)
+
+        bugs_ids_processed = []
+
+        for row in table.get_bugs_rows():
+            changed_row = self.bug_update_row(row['id'], table, row, milestone_dict)
+            bugs_ids_processed.append(row['id'])
+
+        for project_name in ['fuel', 'mos']:
+            print 'Cheking for new bugs in {}'.format(project_name)
+            project = self._lp.projects[project_name]
+            milestone = project.getMilestone(name=milestone_dict['targets'][0])
+
+            for task in milestone.searchTasks():
+                bug_id = task.bug.id
+                if bug_id not in bugs_ids_processed:
+                    print 'New bug {}'.format(bug_id)
+                    bugs_ids_processed.append(bug_id)
+                    row = table.get_new_bug_row()
+                    self.row_add_note(row, 'auto-added {}'.format(strftime("%Y-%m-%d %H:%M", gmtime())))
+                    self.bug_update_row(bug_id, table, row, milestone_dict)
+
         table.flush_updates()
 
     @staticmethod
     def row_add_note(row, note):
         if 'notes' in row:
-            note += ';'
             current_note = row['notes']
             if note not in current_note:
-                current_note = note + current_note
-                row['notes'] = current_note
+                row['notes'] = current_note + ';' + note
         else:
-            print 'warn: missed "notes" field'
+            row['notes'] = note
 
     @staticmethod
     def row_set(row, key, value):
-        if key in row:
-            if key == 'web_link':
-                # do not change link, if we already have one
-                if row[key] != '':
-                    return
-            elif key == 'private':
-                value = str(value).upper()
-            row[key] = value
-        else:
-            print 'warn: missed "{0}" field'.format(key)
+        if key == 'web_link':
+            # do not change link, if we already have one
+            if key in row and row[key] != '':
+                return
+        elif key == 'private':
+            value = str(value).upper()
+        row[key] = value
 
     @staticmethod
     def bug_get_task_for_mu(tasks, targets):
-        for task in tasks:
+        task, target_id = None, None
+        for current_task in tasks:
             for i, target in enumerate(targets):
-                ms = task.milestone
+                ms = current_task.milestone
                 if ms is not None:
-                    if task.milestone.name == target:
-                        return task, i
-        return None, -1
+                    if current_task.milestone.name == target:
+                        if task == None or i < target_id:
+                            task, target_id = current_task, i
+        return task, target_id
 
 
 def main():

@@ -41,14 +41,15 @@ def credentials_save_fail():
     print '> warn: fail when saving credentials'
 
 
-def launchpad_login(service_root, consumer_name, credentials_file=None):
+def launchpad_login(service_root, consumer_name, credentials_file=None, version='devel'):
     auth_engine =\
         AuthorizeRequestTokenCli(service_root, consumer_name)
     lp = Launchpad.login_with(
         service_root=service_root,
         authorization_engine=auth_engine,
         credentials_file=credentials_file,
-        credential_save_failed=credentials_save_fail)
+        credential_save_failed=credentials_save_fail,
+        version=version)
 
     return lp
 

@@ -149,8 +149,10 @@ class CategorizationUpdater:
         bugs_ids_processed = []
 
         for row in table.get_bugs_rows():
+            if int(row['id']) in bugs_ids_processed:
+                self.row_add_note(row, 'dublicate in table!')
             changed_row = self.bug_update_row(row['id'], table, row, milestone_dict)
-            bugs_ids_processed.append(row['id'])
+            bugs_ids_processed.append(int(row['id']))
 
         for project_name in settings.PROJECTS:
             print 'Cheking for new bugs in {}'.format(project_name)
@@ -159,9 +161,9 @@ class CategorizationUpdater:
 
             for task in milestone.searchTasks():
                 bug_id = task.bug.id
-                if bug_id not in bugs_ids_processed:
+                if int(bug_id) not in bugs_ids_processed:
                     print 'New bug {}'.format(bug_id)
-                    bugs_ids_processed.append(bug_id)
+                    bugs_ids_processed.append(int(bug_id))
                     row = table.get_new_bug_row()
                     self.row_add_note(row, 'auto-added {}'.format(strftime("%Y-%m-%d %H:%M", gmtime())))
                     self.bug_update_row(bug_id, table, row, milestone_dict)

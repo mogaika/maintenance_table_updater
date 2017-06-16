@@ -152,7 +152,7 @@ class CategorizationUpdater:
             changed_row = self.bug_update_row(row['id'], table, row, milestone_dict)
             bugs_ids_processed.append(row['id'])
 
-        for project_name in ['fuel', 'mos']:
+        for project_name in settings.PROJECTS:
             print 'Cheking for new bugs in {}'.format(project_name)
             project = self._lp.projects[project_name]
             milestone = project.getMilestone(name=milestone_dict['targets'][0])

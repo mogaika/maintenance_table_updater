@@ -13,10 +13,15 @@
     concurrently: false
     display-name: 'Update categorization table for {milestone}'
     quiet-period: 10
+    logrotate:
+        daysToKeep: 3
+        numToKeep: 10
+        artifactDaysToKeep: 3
+        artifactNumToKeep: 10
     builders:
         - shell: |
             cd /work/my/cat_table_update
-            ./update.py -m "{milestone}"
+            python -u update.py -m "{milestone}"
 
 - job:
     name: 'update-cat-tables'

@@ -171,9 +171,9 @@ class CategorizationUpdater:
     @staticmethod
     def row_add_note(row, note):
         if 'notes' in row:
-            current_note = row['notes']
+            current_note = row['notes'] + ';'
             if note not in current_note:
-                row['notes'] = current_note + ';' + note
+                row['notes'] = current_note + note
         else:
             row['notes'] = note
 

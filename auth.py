@@ -65,3 +65,4 @@ def gspread_login(filename):
         print '> http://gspread.readthedocs.io/en/latest/oauth2.html'
         print '> Do not forget share documents with key owner service account!'
     return None
+

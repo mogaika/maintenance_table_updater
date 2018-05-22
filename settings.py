@@ -82,6 +82,24 @@ MILESTONES = (
         'spreadsheet': '1JnrK9zHjy49_EPESll8d8XZ9Pr63QJOkZU2SgkxpxiQ',
         'header_row': 4,
         'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '9.2-mu-4',
+        'targets': ('9.2-mu-4', '9.x-updates'),
+        'spreadsheet': '1xfYxYW6Y-3xn4DAVpDjf6a5urqELLTULzGKzyF5UAnM',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '9.2-mu-5',
+        'targets': ('9.2-mu-5', '9.x-updates'),
+        'spreadsheet': '1oeZ1qqE6URFHA1mV0ucT6tQYjOeV3Sv_uNCPOa8ahyo',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
+    }, {
+        'name': '9.2-mu-6',
+        'targets': ('9.2-mu-6', '9.x-updates'),
+        'spreadsheet': '1wmPmB3DGZBDRP97dutWjWg768vZYgmwwqQRxp4xy7Mg',
+        'header_row': 4,
+        'columns_names': TABLE_COLUMNS_NAMES_DEFAULT,
     }
 )
 
